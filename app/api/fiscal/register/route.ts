@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Company } from '@/models/Company';
+import  Company  from '@/models/Company';
 
 import { getServerSession } from 'next-auth';
 import { dbConnect } from '@/lib/database';
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const registerData = await registerResponse.json();
 
     // Update company with device registration details
-    //@ts-ignore
+    //@ts-expect-error comapany is not defined
     const company = await Company.findByIdAndUpdate(session.user.company, {
       deviceId,
       activationKey,

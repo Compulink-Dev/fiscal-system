@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 
 const companySchema = new mongoose.Schema({
+  deviceId: { type: String, required: true },
   name: { type: String, required: true },
   tradeName: { type: String, required: true },
   tin: { type: String, unique: true, required: true },
@@ -14,7 +15,11 @@ const companySchema = new mongoose.Schema({
   },
   contacts: {
     phoneNo: { type: String, required: true },
-    email: { type: String, required: true },
+    email: { 
+      type: String, 
+      required: true, // Make email required
+      unique: true 
+    },
     mobile: { type: String, required: true }
   },
   primaryContact: {
@@ -34,4 +39,5 @@ const companySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-export const Company = mongoose.models.Company || mongoose.model('Company', companySchema);
+
+export default mongoose.models?.Company || mongoose.model('Company', companySchema);

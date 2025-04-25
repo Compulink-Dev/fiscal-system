@@ -2,6 +2,7 @@
 import { z } from 'zod';
 
 const stations = [
+  "Harare",
   'Beitbridge',
   'Bindura',
   'Bulawayo Mhlahlandlela',
@@ -35,6 +36,7 @@ const accountingSystems = [
 ] as const;
 
 export const companyRegistrationSchema = z.object({
+  deviceId: z.string().min(1, "Device ID is required"),
   companyName: z.string().min(1, "Company name is required"),
   companyTradeName: z.string().min(1, "Trade name is required"),
   zimraDetails: z.object({

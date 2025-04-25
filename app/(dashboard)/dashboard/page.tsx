@@ -1,7 +1,6 @@
-//@ts-nocheck
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -25,27 +24,87 @@ ChartJS.register(
   Legend
 );
 
+interface SessionUser {
+  name?: string;
+  email?: string;
+  role?: string;
+  companyId?: string;
+}
+
+interface CompanyData {
+  device?: string;
+  name?: string;
+  tradeName?: string;
+  tin?: string;
+  vatNumber?: string;
+  address?: {
+    street?: string;
+    houseNo?: string;
+    city?: string;
+    province?: string;
+  };
+  contacts?: {
+    phoneNo?: string;
+    email?: string;
+    mobile?: string;
+  };
+  primaryContact?: {
+    name?: string;
+  };
+  station?: string;
+  accountingSystem?: string;
+  createdBy?: string;
+  createdAt?: Date;
+  authorizedPersons?: {
+    name?: string;
+    designation?: string;
+    signature?: string;
+    date?: string;
+  }[];
+  vatCertificatePath?: string;
+  operatingMode?: string;
+}
+
 function Dashboard() {
   const { data: session } = useSession();
-
-  // Extract user and company data from the session
-  const user = session?.user || {};
-  const company = user?.company || {};
-
-  console.log("Session:", session);
+  const [company, setCompany] = useState<CompanyData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // Extract user data from the session
+  const user = session?.user as SessionUser;
 
   useEffect(() => {
-    // This will log whenever the session changes
-    console.log("Client-side session:", session);
+    const fetchCompany = async () => {
+      try {
+        if (!session?.user) return;
 
-    // If you want to see the actual JWT token (only available if using JWT strategy)
-    const getToken = async () => {
-      const response = await fetch("/api/auth/session");
-      const data = await response.json();
-      console.log("Raw session data:", data);
+        // Type assertion for companyId
+        const companyId = (session.user as any).companyId;
+        if (!companyId) {
+          setError("Company ID not found in session");
+          return;
+        }
+
+        const response = await fetch("/api/companies");
+        if (!response.ok) {
+          throw new Error("Failed to fetch company data");
+        }
+        const companyData = await response.json();
+        setCompany(companyData);
+      } catch (err) {
+        console.error("Error fetching company:", err);
+        setError("Failed to load company data");
+      } finally {
+        setLoading(false);
+      }
     };
-    getToken();
+
+    fetchCompany();
   }, [session]);
+
+  console.log("Session:", session);
+  console.log("Company data:", company);
+  console.log("error:", error);
 
   // Sample statistics
   const stats = {
@@ -101,11 +160,15 @@ function Dashboard() {
     }`.trim();
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="">
       <h1 className="text-lg font-bold text-gray-800">Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-full my-4">
+      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-2 h-full my-4">
         {/* Fiscal Day Information */}
         <div className="border p-4 rounded space-y-4 text-sm text-slate-500">
           <p className="text-lg font-bold text-black">Fiscal Day</p>
@@ -130,70 +193,74 @@ function Dashboard() {
           <div className="text-sm text-slate-500 space-y-1">
             <div className="flex gap-2">
               <p>Account Name:</p>
-              <p>{user.name || "N/A"}</p>
+              <p>{user?.name || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Email:</p>
-              <p>{user.email || "N/A"}</p>
+              <p>{user?.email || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Role:</p>
-              <p className="capitalize">{user.role || "N/A"}</p>
+              <p className="capitalize">{user?.role || "N/A"}</p>
             </div>
 
             <div className="flex gap-2 mt-2">
               <p className="text-lg font-bold text-black">Company Details</p>
             </div>
             <div className="flex gap-2">
+              <p>Device:</p>
+              <p>{company?.device || "N/A"}</p>
+            </div>
+            <div className="flex gap-2">
               <p>Company Name:</p>
-              <p>{company.name || "N/A"}</p>
+              <p>{company?.name || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Trade Name:</p>
-              <p>{company.tradeName || "N/A"}</p>
+              <p>{company?.tradeName || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Company Email:</p>
-              <p>{company.contacts?.email || "N/A"}</p>
+              <p>{company?.contacts?.email || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Phone:</p>
-              <p>{company.contacts?.phoneNo || "N/A"}</p>
+              <p>{company?.contacts?.phoneNo || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Mobile:</p>
-              <p>{company.contacts?.mobile || "N/A"}</p>
+              <p>{company?.contacts?.mobile || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Address:</p>
-              <p>{formatAddress(company.address)}</p>
+              <p>{formatAddress(company?.address)}</p>
             </div>
             <div className="flex gap-2">
               <p>TIN:</p>
-              <p>{company.tin || "N/A"}</p>
+              <p>{company?.tin || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>VAT Number:</p>
-              <p>{company.vatNumber || "N/A"}</p>
+              <p>{company?.vatNumber || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Station:</p>
-              <p>{company.station || "N/A"}</p>
+              <p>{company?.station || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Accounting System:</p>
-              <p>{company.accountingSystem || "N/A"}</p>
+              <p>{company?.accountingSystem || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Primary Contact:</p>
-              <p>{company.primaryContact?.name || "N/A"}</p>
+              <p>{company?.primaryContact?.name || "N/A"}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
         <Card className="p-4 flex flex-col items-center">
           <p className="text-sm font-semibold">Receipts</p>
           <p className="text-2xl font-bold text-green-600">

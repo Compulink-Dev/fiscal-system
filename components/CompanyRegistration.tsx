@@ -28,6 +28,7 @@ import {
 
 // Define the station and accounting system options
 const stations = [
+  "Harare",
   "Beitbridge",
   "Bindura",
   "Bulawayo Mhlahlandlela",
@@ -53,6 +54,7 @@ const stations = [
 
 const accountingSystems = [
   "Excel",
+  "Palladium",
   "Quickbooks",
   "Sage Pastel",
   "Odoo",
@@ -61,7 +63,6 @@ const accountingSystems = [
   "Zoho",
   "Propharm",
   "Tally Prime",
-  "Palladium",
   "Havana",
   "Meat matrix",
   "Protal",
@@ -71,6 +72,7 @@ export function CompanyRegistrationForm() {
   const form = useForm<CompanyRegistrationFormData>({
     resolver: zodResolver(companyRegistrationSchema),
     defaultValues: {
+      deviceId: "",
       companyName: "",
       companyTradeName: "",
       zimraDetails: {
@@ -111,7 +113,10 @@ export function CompanyRegistrationForm() {
     try {
       const formData = new FormData();
 
+      // Append file to FormData
+
       // Append simple fields
+      if (data.deviceId) formData.append("deviceId", data.deviceId);
       if (data.companyName) formData.append("companyName", data.companyName);
       if (data.companyTradeName)
         formData.append("companyTradeName", data.companyTradeName);
@@ -160,6 +165,8 @@ export function CompanyRegistrationForm() {
         body: formData,
       });
 
+      console.log("Form data submitted:", data);
+
       if (!response.ok) {
         // throw new Error("Registration failed");
         const error = await response.json();
@@ -176,10 +183,24 @@ export function CompanyRegistrationForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Company Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Company Information</h3>
+
+            <FormField
+              control={form.control}
+              name="deviceId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Device ID</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -414,7 +435,7 @@ export function CompanyRegistrationForm() {
         <FormField
           control={form.control}
           name="vatCertificate"
-          render={({ field: { onChange, value, ...field } }) => (
+          render={({ field: { onChange, ...field } }) => (
             <FormItem>
               <FormLabel>VAT Registration Certificate</FormLabel>
               <FormControl>

@@ -32,6 +32,8 @@ export default function SignUp() {
           throw new Error(data.message || "Failed to fetch companies");
         }
       } catch (err) {
+        console.log("Error fetching companies:", err);
+
         setError("Failed to load companies");
       } finally {
         setIsLoadingCompanies(false);
@@ -63,6 +65,8 @@ export default function SignUp() {
 
       router.push("/auth/signin");
     } catch (err) {
+      console.log("Error during signup:", err);
+
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);

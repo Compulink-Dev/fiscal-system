@@ -1,5 +1,5 @@
 // app/api/auth/signup/route.ts
-import { User } from "@/models/User";
+import  {User}  from "@/models/User";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/database";

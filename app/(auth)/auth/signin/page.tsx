@@ -12,28 +12,27 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // app/auth/signin/page.tsx
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/auth/redirect", // Let NextAuth handle redirect
+      });
 
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      // Fetch the user session to check the role
-      const response = await fetch("/api/auth/session");
-      const session = await response.json();
-
-      if (session?.user?.role === "admin") {
-        router.push("/admin"); // Redirect admin to admin dashboard
-      } else if (session?.user?.role === "user") {
-        router.push("/dashboard"); // Redirect regular users to user dashboard
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        router.push(result?.url || "/dashboard");
       }
+    } catch (err) {
+      console.log("Error signing in:", err);
+      setError("An unexpected error occurred");
     }
   };
 
@@ -123,7 +122,7 @@ export default function SignIn() {
         </form>
 
         <div className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
+          {"Don't have an account?"}{" "}
           <Link
             href="/auth/signup"
             className="font-medium text-green-600 hover:text-green-500"

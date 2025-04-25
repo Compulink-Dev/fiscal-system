@@ -3,15 +3,7 @@
 
 import React from "react";
 import Link from "next/link";
-import {
-  Home,
-  FileText,
-  Settings,
-  Users,
-  CreditCard,
-  Building,
-  User,
-} from "lucide-react";
+import { Home, FileText, Settings, Users, CreditCard } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -25,32 +17,22 @@ function Sidebar() {
       label: "Dashboard",
     },
     {
-      href: "/admin/company",
-      icon: <Building className="h-5 w-5" />,
-      label: "Invoices",
-    },
-    {
-      href: "/admin/user",
-      icon: <User className="h-5 w-5" />,
-      label: "Invoices",
-    },
-    {
-      href: "/admin/invoices",
+      href: "/dashboard/invoices",
       icon: <FileText className="h-5 w-5" />,
       label: "Invoices",
     },
     {
-      href: "/admin/clients",
+      href: "/dashboard/clients",
       icon: <Users className="h-5 w-5" />,
       label: "Clients",
     },
     {
-      href: "/admin/payments",
+      href: "/dashboard/payments",
       icon: <CreditCard className="h-5 w-5" />,
       label: "Payments",
     },
     {
-      href: "/admin/settings",
+      href: "/dashboard/settings",
       icon: <Settings className="h-5 w-5" />,
       label: "Settings",
     },

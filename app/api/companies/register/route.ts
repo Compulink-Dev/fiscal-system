@@ -1,6 +1,6 @@
 // app/api/companies/register/route.ts
 import { NextResponse } from 'next/server';
-import { Company } from '@/models/Company';
+import  Company  from '@/models/Company';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { dbConnect } from '@/lib/database';
@@ -15,6 +15,8 @@ export async function GET() {
     return NextResponse.json(companies);
   } catch (error) {
     console.error("Error fetching companies:", error);
+    console.log("Error fetching companies:", error);
+    
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
@@ -36,6 +38,7 @@ export async function POST(request: Request) {
     
     // Reconstruct the nested objects from FormData
     const data: Record<string, any> = {
+      deviceId: formData.get('deviceId'),
       companyName: formData.get('companyName'),
       companyTradeName: formData.get('companyTradeName'),
       station: formData.get('station'),
@@ -77,6 +80,7 @@ export async function POST(request: Request) {
 
     // Transform to database model
     const companyData = {
+      deviceId: validatedData.deviceId,
       name: validatedData.companyName,
       tradeName: validatedData.companyTradeName,
       tin: validatedData.zimraDetails.tin,
@@ -116,6 +120,9 @@ export async function POST(request: Request) {
       createdBy: session.user.id,
     });
 
+    console.log('Company registered:', company);
+    
+
     return NextResponse.json({ 
       success: true,
       companyId: company._id,
@@ -123,6 +130,8 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Registration error:', error);
+    console.log('Registration error:', error);
+    
     return NextResponse.json(
       { 
         error: 'Registration failed',
