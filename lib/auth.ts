@@ -1,11 +1,11 @@
 // lib/auth.ts
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { User } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "./database";
 import { Subscription } from "@/models/Subscription";
 import type { DefaultSession, DefaultUser } from "next-auth";
+import prisma from "./prisma";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -53,9 +53,14 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password are required");
         }
 
-        const user = await User.findOne({ 
-          email: { $regex: new RegExp(`^${credentials.email.trim()}$`, 'i') }
-        }).select("+password");
+        const user = await prisma.user.findFirst({
+          where: { 
+            email: { 
+              equals: credentials.email, 
+              mode: "insensitive" 
+            } 
+          },
+        });
 
 
         if (!user) {
@@ -77,28 +82,28 @@ export const authOptions: NextAuthOptions = {
         // Admin users bypass subscription checks
         if (user.role === 'admin') {
           return {
-            id: user._id.toString(),
+            id: user.id.toString(),
             name: user.name,
             email: user.email,
             role: user.role,
-            companyId: user.company?.toString(),
+            companyId: user.companyId ? user.companyId.toString() : undefined,
             hasActiveSubscription: true // Always true for admins
           };
         }
 
         // Check for active subscription for non-admin users
         const activeSub = await Subscription.findOne({
-          user: user._id,
+          user: user.id,
           status: 'Active',
           expiresAt: { $gt: new Date() }
         });
 
         return {
-          id: user._id.toString(),
+          id: user.id.toString(),
           name: user.name,
           email: user.email,
           role: user.role,
-          companyId: user.company?.toString(),
+          companyId: user.companyId ? user.companyId.toString() : undefined,
           hasActiveSubscription: !!activeSub
         };
       },
@@ -126,7 +131,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   
-    async jwt({ token, user }) {
+    async jwt({ token, user,trigger, session }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
@@ -135,6 +140,13 @@ export const authOptions: NextAuthOptions = {
         token.companyId = user.companyId;
         token.hasActiveSubscription = user.hasActiveSubscription;
       }
+
+
+    // Update from client-side session updates
+    if (trigger === "update" && session?.user?.hasActiveSubscription !== undefined) {
+      token.hasActiveSubscription = session.user.hasActiveSubscription;
+    }
+
       return token;
     }
   }

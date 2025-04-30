@@ -47,8 +47,6 @@ export async function deleteCompany(id: string) {
 }
 
 // app/actions/company-actions.ts
-// app/actions/company-actions.ts
-// app/actions/company-actions.ts
 export async function getCompaniesForTable() {
   try {
     const companies = await prisma.company.findMany({
@@ -98,20 +96,6 @@ export async function getCompaniesForTable() {
   }
 }
 
-export async function getCompanyById(id: string) {
-  try {
-    const company = await prisma.company.findUnique({
-      where: { id },
-      include: {
-        users: true,
-        invoices: true,
-      },
-    });
-    return { success: true, company };
-  } catch (error) {
-    return { success: false, error: error };
-  }
-}
 
 export async function getAllCompanies() {
   try {
@@ -273,3 +257,98 @@ export async function updateCompanyAction(id: string, data: any) {
     };
   }
 }
+
+// app/actions/company-actions.ts
+export async function getCompanyByIdAction(id: string) {
+  try {
+    const company = await prisma.company.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        deviceId: true,
+        tradeName: true,
+        tin: true,
+        vatNumber: true,
+        address: true,
+        contacts: true,
+        primaryContact: true,
+        authorizedPersons: true,
+        station: true,
+        accountingSystem: true,
+        operatingMode: true,
+        vatCertificatePath: true,
+        createdById: true,
+        createdAt: true,
+      },
+    });
+
+    if (!company) {
+      return { success: false, error: "Company not found" };
+    }
+
+    // Helper function to safely parse JSON fields
+    const parseField = <T,>(field: any): T | null => {
+      if (field === null || field === undefined) return null;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field) as T;
+        } catch {
+          return null;
+        }
+      }
+      return field as T;
+    };
+
+    // Manually construct the company object with proper typing
+    const parsedCompany = {
+      ...company,
+      address: parseField<{
+        street?: string;
+        houseNo?: string;
+        city?: string;
+        province?: string;
+      }>(company.address),
+      contacts: parseField<{
+        phoneNo?: string;
+        email?: string;
+        mobile?: string;
+      }>(company.contacts),
+      primaryContact: parseField<{
+        name?: string;
+      }>(company.primaryContact),
+      authorizedPersons: parseField<
+        Array<{
+          name?: string;
+          designation?: string;
+          signature?: string;
+          date?: string;
+        }>
+      >(company.authorizedPersons),
+    };
+
+    return { success: true, company: parsedCompany };
+  } catch (error) {
+    console.error("Error fetching company:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to fetch company" 
+    };
+  }
+}
+
+export async function getCompanyById(id: string) {
+  try {
+    const company = await prisma.company.findUnique({
+      where: { id },
+      include: {
+        users: true,
+        invoices: true,
+      },
+    });
+    return { success: true, company };
+  } catch (error) {
+    return { success: false, error: error };
+  }
+}
+

@@ -13,6 +13,10 @@ import {
 } from "chart.js";
 import { Card } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
+import {
+  getCompanyById,
+  getCompanyByIdAction,
+} from "@/app/actions/company-actions";
 
 // Register required Chart.js components
 ChartJS.register(
@@ -32,41 +36,44 @@ interface SessionUser {
 }
 
 interface CompanyData {
-  device?: string;
-  name?: string;
-  tradeName?: string;
-  tin?: string;
-  vatNumber?: string;
+  id: string;
+  deviceId?: string | null;
+  name?: string | null;
+  tradeName?: string | null;
+  tin?: string | null;
+  vatNumber?: string | null;
   address?: {
     street?: string;
     houseNo?: string;
     city?: string;
     province?: string;
-  };
+  } | null;
   contacts?: {
     phoneNo?: string;
     email?: string;
     mobile?: string;
-  };
+  } | null;
   primaryContact?: {
     name?: string;
-  };
-  station?: string;
-  accountingSystem?: string;
-  createdBy?: string;
-  createdAt?: Date;
-  authorizedPersons?: {
-    name?: string;
-    designation?: string;
-    signature?: string;
-    date?: string;
-  }[];
-  vatCertificatePath?: string;
-  operatingMode?: string;
+  } | null;
+  station?: string | null;
+  accountingSystem?: string | null;
+  operatingMode?: string | null;
+  vatCertificatePath?: string | null;
+  createdById?: string | null;
+  createdAt?: Date | null;
+  authorizedPersons?:
+    | {
+        name?: string;
+        designation?: string;
+        signature?: string;
+        date?: string;
+      }[]
+    | null;
 }
 
 function Dashboard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,31 +83,54 @@ function Dashboard() {
   useEffect(() => {
     const fetchCompany = async () => {
       try {
-        if (!session?.user) return;
+        setLoading(true);
+        setError(null);
 
-        // Type assertion for companyId
-        const companyId = (session.user as any).companyId;
+        if (status === "loading") return;
+        if (status === "unauthenticated") {
+          throw new Error("Not authenticated");
+        }
+
+        const companyId = user?.companyId;
         if (!companyId) {
-          setError("Company ID not found in session");
-          return;
+          throw new Error("Company ID not found in session");
         }
 
-        const response = await fetch("/api/companies");
-        if (!response.ok) {
-          throw new Error("Failed to fetch company data");
+        console.log("Fetching company with ID:", companyId);
+
+        const res = await getCompanyById(companyId);
+
+        console.log("Company response:", res);
+
+        const result = await getCompanyByIdAction(companyId);
+
+        if (!result.success) {
+          throw new Error(result.error || "Failed to fetch company");
         }
-        const companyData = await response.json();
-        setCompany(companyData);
+
+        //@ts-expect-error Company data might not match the expected type
+        setCompany(result.company);
       } catch (err) {
         console.error("Error fetching company:", err);
-        setError("Failed to load company data");
+        setError(
+          err instanceof Error ? err.message : "Failed to load company data"
+        );
+        setCompany(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCompany();
-  }, [session]);
+  }, [session, status, user?.companyId]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500 p-4">{error}</div>;
+  }
 
   console.log("Session:", session);
   console.log("Company data:", company);
@@ -209,7 +239,7 @@ function Dashboard() {
             </div>
             <div className="flex gap-2">
               <p>Device:</p>
-              <p>{company?.device || "N/A"}</p>
+              <p>{company?.deviceId || "N/A"}</p>
             </div>
             <div className="flex gap-2">
               <p>Company Name:</p>

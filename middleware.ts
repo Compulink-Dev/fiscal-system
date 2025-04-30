@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
     // Check subscription for non-admin users
     if (token.role !== 'admin' && !token.hasActiveSubscription) {
       return NextResponse.redirect(
-        new URL('/payment?reason=no_active_subscription', request.url)
+        new URL('/payments?reason=no_active_subscription', request.url)
       );
     }
   }

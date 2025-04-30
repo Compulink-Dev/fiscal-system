@@ -7,6 +7,8 @@ import { createNewSubscription } from "@/app/actions/subscription-actions";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { SubscriptionStatus } from "@prisma/client";
+import { initiatePayNowPayment } from "@/app/actions/payment-actions";
+import { useRouter } from "next/navigation";
 
 const paymentPlans = [
   {
@@ -30,6 +32,7 @@ export default function PaymentPage() {
   const [selectedPlan, setSelectedPlan] = useState("basic");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   // Optional: Add loading state for session
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -60,6 +63,20 @@ export default function PaymentPage() {
     setError("");
 
     try {
+      // Get the amount based on selected plan
+      const amount = selectedPlan === "basic" ? 9.99 : 19.99;
+
+      // Initiate payment
+      const payment = await initiatePayNowPayment({
+        userId: session.user.id,
+        amount,
+        description: `${selectedPlan} subscription`,
+      });
+
+      if (!payment.success) {
+        throw new Error(payment.error || "Failed to initiate payment");
+      }
+
       const result = await createNewSubscription({
         userId: session.user.id,
         plan: selectedPlan,
@@ -79,7 +96,8 @@ export default function PaymentPage() {
       });
 
       toast.success("Subscription created successfully!");
-      window.location.href = "/dashboard";
+      router.push(payment.redirectUrl);
+      // window.location.href = "/dashboard";
     } catch (err) {
       console.error("Payment error:", err);
       const errorMessage =

@@ -15,10 +15,10 @@ model Company {
   tin       String @unique
   vatNumber String @unique
 
-  address           Address
-  contacts          Contacts
-  primaryContact    PrimaryContact
-  authorizedPersons AuthorizedPerson[]
+  address           Json?
+  contacts          Json?
+  primaryContact    Json?
+  authorizedPersons Json?
 
   station            String
   accountingSystem   String
@@ -47,6 +47,7 @@ model User {
   hasActiveSubscription Boolean        @default(false)
   subscriptions         Subscription[]
   UserSession           UserSession[]
+  Payment               Payment[]
 }
 
 model Invoice {
@@ -90,6 +91,7 @@ model Subscription {
   plan      String
   expiresAt DateTime
   createdAt DateTime           @default(now())
+  Payment   Payment[]
 
   @@index([userId])
 }
@@ -103,6 +105,61 @@ model UserSession {
   expiresAt DateTime
 
   @@index([userId])
+}
+
+model Payment {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String        @db.ObjectId
+  user           User          @relation(fields: [userId], references: [id])
+  amount         Float
+  currency       String        @default("USD")
+  status         PaymentStatus @default(Pending)
+  paymentMethod  PaymentMethod
+  reference      String
+  pollUrl        String?
+  transaction    Transaction[]
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  subscriptionId String?       @db.ObjectId
+
+  @@index([userId])
+  @@index([reference])
+}
+
+model Transaction {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId      String            @db.ObjectId
+  payment        Payment           @relation(fields: [paymentId], references: [id])
+  transactionId  String
+  amount         Float
+  status         TransactionStatus
+  paymentDetails Json?
+  processedAt    DateTime
+  createdAt      DateTime          @default(now())
+
+  @@index([paymentId])
+  @@index([transactionId])
+}
+
+enum PaymentStatus {
+  Pending
+  Completed
+  Failed
+  Refunded
+}
+
+enum TransactionStatus {
+  Initiated
+  Paid
+  Failed
+  Cancelled
+}
+
+enum PaymentMethod {
+  PayNow
+  CreditCard
+  BankTransfer
 }
 
 // Enum for operating mode

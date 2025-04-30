@@ -91,7 +91,6 @@ export function AppSidebar() {
               {links.map((link) => (
                 <SidebarMenuItem key={link.href}>
                   <SidebarMenuButton
-                    asChild
                     className={pathname === link.href ? "bg-accent" : ""}
                   >
                     <Link

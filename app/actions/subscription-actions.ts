@@ -132,3 +132,56 @@ export async function getAllSubscriptionsWithUsers() {
     };
   }
 }
+
+// Add this new function
+export async function createSubscriptionWithPayment({
+  userId,
+  plan,
+  paymentId,
+}: {
+  userId: string;
+  plan: string;
+  paymentId: string;
+}) {
+  try {
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Create subscription
+      const subscription = await tx.subscription.create({
+        data: {
+          userId,
+          plan,
+          status: "Active",
+          expiresAt,
+        },
+      });
+
+      // Update user
+      await tx.user.update({
+        where: { id: userId },
+        data: { hasActiveSubscription: true },
+      });
+
+      // Update payment
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: "Completed",
+          subscriptionId: subscription.id,
+        },
+      });
+
+      return subscription;
+    });
+
+    revalidatePath("/subscription");
+    return { success: true, subscription: result };
+  } catch (error) {
+    console.error("Create subscription error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create subscription",
+    };
+  }
+}
